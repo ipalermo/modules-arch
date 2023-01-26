@@ -43,10 +43,10 @@ import com.google.samples.apps.nowinandroid.core.model.data.DarkThemeConfig
 import com.google.samples.apps.nowinandroid.core.model.data.ThemeBrand
 import com.google.samples.apps.nowinandroid.ui.NiaApp
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @AndroidEntryPoint
@@ -106,7 +106,8 @@ class MainActivity : ComponentActivity() {
 
             NiaTheme(
                 darkTheme = darkTheme,
-                androidTheme = shouldUseAndroidTheme(uiState)
+                androidTheme = shouldUseAndroidTheme(uiState),
+                disableDynamicTheming = shouldDisableDynamicTheming(uiState),
             ) {
                 NiaApp(
                     networkMonitor = networkMonitor,
@@ -131,7 +132,7 @@ class MainActivity : ComponentActivity() {
  * Returns `true` if the Android theme should be used, as a function of the [uiState].
  */
 @Composable
-fun shouldUseAndroidTheme(
+private fun shouldUseAndroidTheme(
     uiState: MainActivityUiState,
 ): Boolean = when (uiState) {
     Loading -> false
@@ -142,11 +143,22 @@ fun shouldUseAndroidTheme(
 }
 
 /**
+ * Returns `true` if the dynamic color is disabled, as a function of the [uiState].
+ */
+@Composable
+private fun shouldDisableDynamicTheming(
+    uiState: MainActivityUiState,
+): Boolean = when (uiState) {
+    Loading -> false
+    is Success -> !uiState.userData.useDynamicColor
+}
+
+/**
  * Returns `true` if dark theme should be used, as a function of the [uiState] and the
  * current system context.
  */
 @Composable
-fun shouldUseDarkTheme(
+private fun shouldUseDarkTheme(
     uiState: MainActivityUiState,
 ): Boolean = when (uiState) {
     Loading -> isSystemInDarkTheme()

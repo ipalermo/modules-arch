@@ -20,8 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
-import com.google.samples.apps.nowinandroid.feature.author.navigation.authorScreen
-import com.google.samples.apps.nowinandroid.feature.author.navigation.navigateToAuthor
 import com.google.samples.apps.nowinandroid.feature.bookmarks.navigation.bookmarksScreen
 import com.google.samples.apps.nowinandroid.feature.foryou.navigation.forYouNavigationRoute
 import com.google.samples.apps.nowinandroid.feature.foryou.navigation.forYouScreen
@@ -41,7 +39,7 @@ fun NiaNavHost(
     navController: NavHostController,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
-    startDestination: String = forYouNavigationRoute
+    startDestination: String = forYouNavigationRoute,
 ) {
     NavHost(
         navController = navController,
@@ -54,13 +52,9 @@ fun NiaNavHost(
             navigateToTopic = { topicId ->
                 navController.navigateToTopic(topicId)
             },
-            navigateToAuthor = { authorId ->
-                navController.navigateToAuthor(authorId)
-            },
             nestedGraphs = {
                 topicScreen(onBackClick)
-                authorScreen(onBackClick)
-            }
+            },
         )
     }
 }

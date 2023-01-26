@@ -19,14 +19,10 @@ package com.google.samples.apps.nowinandroid.core.data.repository
 import com.google.samples.apps.nowinandroid.core.data.Synchronizer
 import com.google.samples.apps.nowinandroid.core.data.changeListSync
 import com.google.samples.apps.nowinandroid.core.data.model.asEntity
-import com.google.samples.apps.nowinandroid.core.data.model.authorCrossReferences
-import com.google.samples.apps.nowinandroid.core.data.model.authorEntityShells
 import com.google.samples.apps.nowinandroid.core.data.model.topicCrossReferences
 import com.google.samples.apps.nowinandroid.core.data.model.topicEntityShells
-import com.google.samples.apps.nowinandroid.core.database.dao.AuthorDao
 import com.google.samples.apps.nowinandroid.core.database.dao.NewsResourceDao
 import com.google.samples.apps.nowinandroid.core.database.dao.TopicDao
-import com.google.samples.apps.nowinandroid.core.database.model.AuthorEntity
 import com.google.samples.apps.nowinandroid.core.database.model.PopulatedNewsResource
 import com.google.samples.apps.nowinandroid.core.database.model.TopicEntity
 import com.google.samples.apps.nowinandroid.core.database.model.asExternalModel
@@ -34,9 +30,9 @@ import com.google.samples.apps.nowinandroid.core.datastore.ChangeListVersions
 import com.google.samples.apps.nowinandroid.core.model.data.NewsResource
 import com.google.samples.apps.nowinandroid.core.network.NiaNetworkDataSource
 import com.google.samples.apps.nowinandroid.core.network.model.NetworkNewsResource
-import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
 /**
  * Disk storage backed implementation of the [NewsRepository].
@@ -44,21 +40,18 @@ import kotlinx.coroutines.flow.map
  */
 class OfflineFirstNewsRepository @Inject constructor(
     private val newsResourceDao: NewsResourceDao,
-    private val authorDao: AuthorDao,
     private val topicDao: TopicDao,
     private val network: NiaNetworkDataSource,
 ) : NewsRepository {
 
-    override fun getNewsResourcesStream(): Flow<List<NewsResource>> =
-        newsResourceDao.getNewsResourcesStream()
+    override fun getNewsResources(): Flow<List<NewsResource>> =
+        newsResourceDao.getNewsResources()
             .map { it.map(PopulatedNewsResource::asExternalModel) }
 
-    override fun getNewsResourcesStream(
-        filterAuthorIds: Set<String>,
-        filterTopicIds: Set<String>
-    ): Flow<List<NewsResource>> = newsResourceDao.getNewsResourcesStream(
-        filterAuthorIds = filterAuthorIds,
-        filterTopicIds = filterTopicIds
+    override fun getNewsResources(
+        filterTopicIds: Set<String>,
+    ): Flow<List<NewsResource>> = newsResourceDao.getNewsResources(
+        filterTopicIds = filterTopicIds,
     )
         .map { it.map(PopulatedNewsResource::asExternalModel) }
 
@@ -81,30 +74,18 @@ class OfflineFirstNewsRepository @Inject constructor(
                     topicEntities = networkNewsResources
                         .map(NetworkNewsResource::topicEntityShells)
                         .flatten()
-                        .distinctBy(TopicEntity::id)
-                )
-                authorDao.insertOrIgnoreAuthors(
-                    authorEntities = networkNewsResources
-                        .map(NetworkNewsResource::authorEntityShells)
-                        .flatten()
-                        .distinctBy(AuthorEntity::id)
+                        .distinctBy(TopicEntity::id),
                 )
                 newsResourceDao.upsertNewsResources(
                     newsResourceEntities = networkNewsResources
-                        .map(NetworkNewsResource::asEntity)
+                        .map(NetworkNewsResource::asEntity),
                 )
                 newsResourceDao.insertOrIgnoreTopicCrossRefEntities(
                     newsResourceTopicCrossReferences = networkNewsResources
                         .map(NetworkNewsResource::topicCrossReferences)
                         .distinct()
-                        .flatten()
+                        .flatten(),
                 )
-                newsResourceDao.insertOrIgnoreAuthorCrossRefEntities(
-                    newsResourceAuthorCrossReferences = networkNewsResources
-                        .map(NetworkNewsResource::authorCrossReferences)
-                        .distinct()
-                        .flatten()
-                )
-            }
+            },
         )
 }

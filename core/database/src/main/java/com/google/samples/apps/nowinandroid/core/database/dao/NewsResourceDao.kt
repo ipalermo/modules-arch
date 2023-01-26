@@ -23,7 +23,6 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import androidx.room.Upsert
-import com.google.samples.apps.nowinandroid.core.database.model.NewsResourceAuthorCrossRef
 import com.google.samples.apps.nowinandroid.core.database.model.NewsResourceEntity
 import com.google.samples.apps.nowinandroid.core.database.model.NewsResourceTopicCrossRef
 import com.google.samples.apps.nowinandroid.core.database.model.PopulatedNewsResource
@@ -40,9 +39,9 @@ interface NewsResourceDao {
         value = """
             SELECT * FROM news_resources
             ORDER BY publish_date DESC
-    """
+    """,
     )
-    fun getNewsResourcesStream(): Flow<List<PopulatedNewsResource>>
+    fun getNewsResources(): Flow<List<PopulatedNewsResource>>
 
     @Transaction
     @Query(
@@ -53,16 +52,10 @@ interface NewsResourceDao {
                 SELECT news_resource_id FROM news_resources_topics
                 WHERE topic_id IN (:filterTopicIds)
             )
-            OR id in
-            (
-                SELECT news_resource_id FROM news_resources_authors
-                WHERE author_id  IN (:filterAuthorIds)
-            )
             ORDER BY publish_date DESC
-    """
+    """,
     )
-    fun getNewsResourcesStream(
-        filterAuthorIds: Set<String> = emptySet(),
+    fun getNewsResources(
         filterTopicIds: Set<String> = emptySet(),
     ): Flow<List<PopulatedNewsResource>>
 
@@ -86,12 +79,7 @@ interface NewsResourceDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertOrIgnoreTopicCrossRefEntities(
-        newsResourceTopicCrossReferences: List<NewsResourceTopicCrossRef>
-    )
-
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertOrIgnoreAuthorCrossRefEntities(
-        newsResourceAuthorCrossReferences: List<NewsResourceAuthorCrossRef>
+        newsResourceTopicCrossReferences: List<NewsResourceTopicCrossRef>,
     )
 
     /**
@@ -101,7 +89,7 @@ interface NewsResourceDao {
         value = """
             DELETE FROM news_resources
             WHERE id in (:ids)
-        """
+        """,
     )
     suspend fun deleteNewsResources(ids: List<String>)
 }

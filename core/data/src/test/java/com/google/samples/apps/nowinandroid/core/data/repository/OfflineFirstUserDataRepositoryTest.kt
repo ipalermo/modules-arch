@@ -24,11 +24,13 @@ import com.google.samples.apps.nowinandroid.core.model.data.UserData
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class OfflineFirstUserDataRepositoryTest {
     private lateinit var subject: OfflineFirstUserDataRepository
@@ -41,11 +43,11 @@ class OfflineFirstUserDataRepositoryTest {
     @Before
     fun setup() {
         niaPreferencesDataSource = NiaPreferencesDataSource(
-            tmpFolder.testUserPreferencesDataStore()
+            tmpFolder.testUserPreferencesDataStore(),
         )
 
         subject = OfflineFirstUserDataRepository(
-            niaPreferencesDataSource = niaPreferencesDataSource
+            niaPreferencesDataSource = niaPreferencesDataSource,
         )
     }
 
@@ -56,11 +58,12 @@ class OfflineFirstUserDataRepositoryTest {
                 UserData(
                     bookmarkedNewsResources = emptySet(),
                     followedTopics = emptySet(),
-                    followedAuthors = emptySet(),
                     themeBrand = ThemeBrand.DEFAULT,
-                    darkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM
+                    darkThemeConfig = DarkThemeConfig.FOLLOW_SYSTEM,
+                    useDynamicColor = false,
+                    shouldHideOnboarding = false,
                 ),
-                subject.userDataStream.first()
+                subject.userData.first(),
             )
         }
 
@@ -71,27 +74,27 @@ class OfflineFirstUserDataRepositoryTest {
 
             assertEquals(
                 setOf("0"),
-                subject.userDataStream
+                subject.userData
                     .map { it.followedTopics }
-                    .first()
+                    .first(),
             )
 
             subject.toggleFollowedTopicId(followedTopicId = "1", followed = true)
 
             assertEquals(
                 setOf("0", "1"),
-                subject.userDataStream
+                subject.userData
                     .map { it.followedTopics }
-                    .first()
+                    .first(),
             )
 
             assertEquals(
-                niaPreferencesDataSource.userDataStream
+                niaPreferencesDataSource.userData
                     .map { it.followedTopics }
                     .first(),
-                subject.userDataStream
+                subject.userData
                     .map { it.followedTopics }
-                    .first()
+                    .first(),
             )
         }
 
@@ -102,18 +105,18 @@ class OfflineFirstUserDataRepositoryTest {
 
             assertEquals(
                 setOf("1", "2"),
-                subject.userDataStream
+                subject.userData
                     .map { it.followedTopics }
-                    .first()
+                    .first(),
             )
 
             assertEquals(
-                niaPreferencesDataSource.userDataStream
+                niaPreferencesDataSource.userData
                     .map { it.followedTopics }
                     .first(),
-                subject.userDataStream
+                subject.userData
                     .map { it.followedTopics }
-                    .first()
+                    .first(),
             )
         }
 
@@ -124,27 +127,27 @@ class OfflineFirstUserDataRepositoryTest {
 
             assertEquals(
                 setOf("0"),
-                subject.userDataStream
+                subject.userData
                     .map { it.bookmarkedNewsResources }
-                    .first()
+                    .first(),
             )
 
             subject.updateNewsResourceBookmark(newsResourceId = "1", bookmarked = true)
 
             assertEquals(
                 setOf("0", "1"),
-                subject.userDataStream
+                subject.userData
                     .map { it.bookmarkedNewsResources }
-                    .first()
+                    .first(),
             )
 
             assertEquals(
-                niaPreferencesDataSource.userDataStream
+                niaPreferencesDataSource.userData
                     .map { it.bookmarkedNewsResources }
                     .first(),
-                subject.userDataStream
+                subject.userData
                     .map { it.bookmarkedNewsResources }
-                    .first()
+                    .first(),
             )
         }
 
@@ -155,16 +158,36 @@ class OfflineFirstUserDataRepositoryTest {
 
             assertEquals(
                 ThemeBrand.ANDROID,
-                subject.userDataStream
+                subject.userData
                     .map { it.themeBrand }
-                    .first()
+                    .first(),
             )
             assertEquals(
                 ThemeBrand.ANDROID,
                 niaPreferencesDataSource
-                    .userDataStream
+                    .userData
                     .map { it.themeBrand }
-                    .first()
+                    .first(),
+            )
+        }
+
+    @Test
+    fun offlineFirstUserDataRepository_set_dynamic_color_delegates_to_nia_preferences() =
+        runTest {
+            subject.setDynamicColorPreference(true)
+
+            assertEquals(
+                true,
+                subject.userData
+                    .map { it.useDynamicColor }
+                    .first(),
+            )
+            assertEquals(
+                true,
+                niaPreferencesDataSource
+                    .userData
+                    .map { it.useDynamicColor }
+                    .first(),
             )
         }
 
@@ -175,16 +198,27 @@ class OfflineFirstUserDataRepositoryTest {
 
             assertEquals(
                 DarkThemeConfig.DARK,
-                subject.userDataStream
+                subject.userData
                     .map { it.darkThemeConfig }
-                    .first()
+                    .first(),
             )
             assertEquals(
                 DarkThemeConfig.DARK,
                 niaPreferencesDataSource
-                    .userDataStream
+                    .userData
                     .map { it.darkThemeConfig }
-                    .first()
+                    .first(),
             )
+        }
+
+    @Test
+    fun whenUserCompletesOnboarding_thenRemovesAllInterests_shouldHideOnboardingIsFalse() =
+        runTest {
+            subject.setFollowedTopicIds(setOf("1"))
+            subject.setShouldHideOnboarding(true)
+            assertTrue(subject.userData.first().shouldHideOnboarding)
+
+            subject.setFollowedTopicIds(emptySet())
+            assertFalse(subject.userData.first().shouldHideOnboarding)
         }
 }

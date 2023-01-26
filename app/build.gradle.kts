@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The Android Open Source Project
+ * Copyright 2022 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import com.google.samples.apps.nowinandroid.NiaBuildType
+import com.android.build.api.dsl.ManagedVirtualDevice
 
 plugins {
     id("nowinandroid.android.application")
@@ -26,8 +28,8 @@ plugins {
 android {
     defaultConfig {
         applicationId = "com.google.samples.apps.nowinandroid"
-        versionCode = 1
-        versionName = "0.0.1" // X.Y.Z; X = Major, Y = minor, Z = Patch level
+        versionCode = 3
+        versionName = "0.0.3" // X.Y.Z; X = Major, Y = minor, Z = Patch level
 
         // Custom test runner to set up Hilt dependency graph
         testInstrumentationRunner = "com.google.samples.apps.nowinandroid.core.testing.NiaTestRunner"
@@ -38,10 +40,11 @@ android {
 
     buildTypes {
         val debug by getting {
-            applicationIdSuffix = ".debug"
+            applicationIdSuffix = NiaBuildType.DEBUG.applicationIdSuffix
         }
         val release by getting {
             isMinifyEnabled = true
+            applicationIdSuffix = NiaBuildType.RELEASE.applicationIdSuffix
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
 
             // To publish on the Play store a private signing key is required, but to allow anyone
@@ -57,9 +60,8 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             // Only use benchmark proguard rules
             proguardFiles("benchmark-rules.pro")
-            //  FIXME enabling minification breaks access to demo backend.
-            isMinifyEnabled = false
-            applicationIdSuffix = ".benchmark"
+            isMinifyEnabled = true
+            applicationIdSuffix = NiaBuildType.BENCHMARK.applicationIdSuffix
         }
     }
 
@@ -72,12 +74,22 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
+        // TODO: Convert it as a convention plugin once Flamingo goes out (https://github.com/android/nowinandroid/issues/523)
+        managedDevices {
+            devices {
+                maybeCreate<ManagedVirtualDevice>("pixel4api30").apply {
+                    device = "Pixel 4"
+                    apiLevel = 30
+                    // ATDs currently support only API level 30.
+                    systemImageSource = "aosp-atd"
+                }
+            }
+        }
     }
     namespace = "com.google.samples.apps.nowinandroid"
 }
 
 dependencies {
-    implementation(project(":feature:author"))
     implementation(project(":feature:interests"))
     implementation(project(":feature:foryou"))
     implementation(project(":feature:bookmarks"))
@@ -91,14 +103,16 @@ dependencies {
     implementation(project(":core:model"))
 
     implementation(project(":sync:work"))
-    implementation(project(":sync:sync-test"))
 
     androidTestImplementation(project(":core:testing"))
     androidTestImplementation(project(":core:datastore-test"))
     androidTestImplementation(project(":core:data-test"))
     androidTestImplementation(project(":core:network"))
     androidTestImplementation(libs.androidx.navigation.testing)
+    androidTestImplementation(libs.accompanist.testharness)
+    androidTestImplementation(kotlin("test"))
     debugImplementation(libs.androidx.compose.ui.testManifest)
+    debugImplementation(project(":ui-test-hilt-manifest"))
 
     implementation(libs.accompanist.systemuicontroller)
     implementation(libs.androidx.activity.compose)

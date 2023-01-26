@@ -16,7 +16,7 @@
 
 package com.google.samples.apps.nowinandroid.feature.bookmarks
 
-import com.google.samples.apps.nowinandroid.core.domain.GetSaveableNewsResourcesStreamUseCase
+import com.google.samples.apps.nowinandroid.core.domain.GetUserNewsResourcesUseCase
 import com.google.samples.apps.nowinandroid.core.model.data.previewNewsResources
 import com.google.samples.apps.nowinandroid.core.testing.repository.TestNewsRepository
 import com.google.samples.apps.nowinandroid.core.testing.repository.TestUserDataRepository
@@ -27,11 +27,11 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 /**
  * To learn more about how this test handles Flows created with stateIn, see
@@ -43,9 +43,9 @@ class BookmarksViewModelTest {
 
     private val userDataRepository = TestUserDataRepository()
     private val newsRepository = TestNewsRepository()
-    private val getSaveableNewsResourcesStreamUseCase = GetSaveableNewsResourcesStreamUseCase(
+    private val getUserNewsResourcesUseCase = GetUserNewsResourcesUseCase(
         newsRepository = newsRepository,
-        userDataRepository = userDataRepository
+        userDataRepository = userDataRepository,
     )
     private lateinit var viewModel: BookmarksViewModel
 
@@ -53,7 +53,7 @@ class BookmarksViewModelTest {
     fun setup() {
         viewModel = BookmarksViewModel(
             userDataRepository = userDataRepository,
-            getSaveableNewsResourcesStream = getSaveableNewsResourcesStreamUseCase
+            getSaveableNewsResources = getUserNewsResourcesUseCase,
         )
     }
 
@@ -69,8 +69,8 @@ class BookmarksViewModelTest {
         newsRepository.sendNewsResources(previewNewsResources)
         userDataRepository.updateNewsResourceBookmark(previewNewsResources[0].id, true)
         val item = viewModel.feedUiState.value
-        assertTrue(item is Success)
-        assertEquals((item as Success).feed.size, 1)
+        assertIs<Success>(item)
+        assertEquals(item.feed.size, 1)
 
         collectJob.cancel()
     }
@@ -86,8 +86,8 @@ class BookmarksViewModelTest {
         viewModel.removeFromSavedResources(previewNewsResources[0].id)
         // Verify list of saved resources is now empty
         val item = viewModel.feedUiState.value
-        assertTrue(item is Success)
-        assertEquals((item as Success).feed.size, 0)
+        assertIs<Success>(item)
+        assertEquals(item.feed.size, 0)
 
         collectJob.cancel()
     }

@@ -20,27 +20,21 @@ import com.google.samples.apps.nowinandroid.core.datastore.NiaPreferencesDataSou
 import com.google.samples.apps.nowinandroid.core.model.data.DarkThemeConfig
 import com.google.samples.apps.nowinandroid.core.model.data.ThemeBrand
 import com.google.samples.apps.nowinandroid.core.model.data.UserData
-import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
 class OfflineFirstUserDataRepository @Inject constructor(
-    private val niaPreferencesDataSource: NiaPreferencesDataSource
+    private val niaPreferencesDataSource: NiaPreferencesDataSource,
 ) : UserDataRepository {
 
-    override val userDataStream: Flow<UserData> =
-        niaPreferencesDataSource.userDataStream
+    override val userData: Flow<UserData> =
+        niaPreferencesDataSource.userData
 
     override suspend fun setFollowedTopicIds(followedTopicIds: Set<String>) =
         niaPreferencesDataSource.setFollowedTopicIds(followedTopicIds)
 
     override suspend fun toggleFollowedTopicId(followedTopicId: String, followed: Boolean) =
         niaPreferencesDataSource.toggleFollowedTopicId(followedTopicId, followed)
-
-    override suspend fun setFollowedAuthorIds(followedAuthorIds: Set<String>) =
-        niaPreferencesDataSource.setFollowedAuthorIds(followedAuthorIds)
-
-    override suspend fun toggleFollowedAuthorId(followedAuthorId: String, followed: Boolean) =
-        niaPreferencesDataSource.toggleFollowedAuthorId(followedAuthorId, followed)
 
     override suspend fun updateNewsResourceBookmark(newsResourceId: String, bookmarked: Boolean) =
         niaPreferencesDataSource.toggleNewsResourceBookmark(newsResourceId, bookmarked)
@@ -50,4 +44,10 @@ class OfflineFirstUserDataRepository @Inject constructor(
 
     override suspend fun setDarkThemeConfig(darkThemeConfig: DarkThemeConfig) =
         niaPreferencesDataSource.setDarkThemeConfig(darkThemeConfig)
+
+    override suspend fun setDynamicColorPreference(useDynamicColor: Boolean) =
+        niaPreferencesDataSource.setDynamicColorPreference(useDynamicColor)
+
+    override suspend fun setShouldHideOnboarding(shouldHideOnboarding: Boolean) =
+        niaPreferencesDataSource.setShouldHideOnboarding(shouldHideOnboarding)
 }
